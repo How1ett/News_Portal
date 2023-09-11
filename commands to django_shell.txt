@@ -1,0 +1,73 @@
+python manage.py shell
+from News.models import *
+
+User.objects.create_user(username='Ilya')
+User.objects.create_user(username='Ivan')
+
+Author.objects.create(user_id=1)
+Author.objects.create(user_id=2)
+
+Category.objects.create(category='Games')
+Category.objects.create(category='Movies and TV series')
+Category.objects.create(category='Gamedev')
+Category.objects.create(category='Hardware')
+
+Post.objects.create(author_id=1, type=1, title='В коде Starfield обнаружены серьезные программные ошибки', text='Разработчик VKD3D (транслятор dx12 в vulkan) обнаружил в коде игры ошибки, которые серьезно влияют на производительность и стабильность игры. Starfield неправильно распределяет память из-за несовпадения с размером страницы памяти ЦП. Если в драйверах для вашей видеокарты нет защиты от этого, то игра будет рандомно крашиться. Starfield злоупотребляет функцией dx12 под названием ExecuteIndirect. Эта функция запрашивает от игры подсказки, чтобы графический драйвер понимал, чего ожидать. Но так как игра отправляет ложные подсказки, то драйвер при обработке данных создает "пузыри" в очереди команд. Эти "пузыри" означают, что графический процессор должен остановить то, что он делает, дважды это проверить и начать все сначала. Starfield создает несколько запросов ExecuteIndirect подряд вместо пакетной обработки, что приводит к усугублению описанной выше проблемы.')
+
+Post.objects.create(author_id=2, type=1, title='Создатели экранизаций «Дюны» потратили недели на выбор дюн для сиквела, потому что не хотели повторять локации', text='Даже в пустыне, где на это мало кто обратил бы внимание. Режиссёр и сценарист Дени Вильнёв рассказал журналу Empire, что в работе над фильмом с названием «Дюна», как ни странно, нужно внимательно подходить к выбору дюн. Команда режиссёра могла бы использовать в сиквеле как минимум часть локаций из первого фильма, но им не хотелось повторяться.')
+
+Post.objects.create(author_id=2, type=0, title='Геймеры нашли способ увеличить FPS в Starfield на картах Nvidia. До 40% прирост FPS', text='Геймеры нашли способ как поднять FPS в Starfield на картах RTX 3000/4000 серии. Для этого, нужно включить Resizable BAR в БИОС.')
+
+PostCategory.objects.create(post_id=1, category_id=1)
+PostCategory.objects.create(post_id=2, category_id=2)
+PostCategory.objects.create(post_id=3, category_id=1)
+PostCategory.objects.create(post_id=3, category_id=4)
+
+Comment.objects.create(post_id=1, user_id=1, text='Купи Скайрим :Е')
+Comment.objects.create(post_id=2, user_id=1, text='Вильнёв гений!')
+Comment.objects.create(post_id=3, user_id=2, text='Оптимизация в сделку не входила.')
+Comment.objects.create(post_id=3, user_id=2, text='Просто обнови железо :3')
+
+Comment.objects.get(id=1).like()
+Comment.objects.get(id=1).like()
+Comment.objects.get(id=1).like()
+Comment.objects.get(id=3).like()
+Comment.objects.get(id=2).like()
+Comment.objects.get(id=2).like()
+Comment.objects.get(id=2).like()
+Comment.objects.get(id=3).like()
+Comment.objects.get(id=3).like()
+Comment.objects.get(id=3).like()
+Comment.objects.get(id=3).like()
+Comment.objects.get(id=1).dislike()
+Comment.objects.get(id=3).dislike()
+Comment.objects.get(id=2).dislike()
+Comment.objects.get(id=2).dislike()
+Post.objects.get(id=1).like()
+Post.objects.get(id=1).like()
+Post.objects.get(id=1).like()
+Post.objects.get(id=2).like()
+Post.objects.get(id=2).like()
+Post.objects.get(id=2).like()
+Post.objects.get(id=2).like()
+Post.objects.get(id=3).like()
+Post.objects.get(id=3).like()
+Post.objects.get(id=3).like()
+Post.objects.get(id=3).like()
+Post.objects.get(id=3).like()
+Post.objects.get(id=3).like()
+Post.objects.get(id=1).dislike()
+Post.objects.get(id=2).dislike()
+Post.objects.get(id=3).dislike()
+Post.objects.get(id=3).dislike()
+Post.objects.get(id=1).dislike()
+
+Author.objects.get(id=1).update_rating()
+Author.objects.get(id=2).update_rating()
+
+Author.objects.order_by('-rating').first().user.username, Author.objects.order_by('-rating').first().rating
+
+best_post = Post.objects.order_by('-mat_rating').first()
+best_post.time_create, best_post.author.user.username, best_post.mat_rating, best_post.title, best_post.preview()
+
+Comment.objects.filter(post_id=best_post).values('time_create', 'user', 'com_rating', 'text')
