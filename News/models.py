@@ -18,6 +18,9 @@ class Author(models.Model):
         self.rating = rat_post + rat_comment + sum_rating
         self.save()
 
+    def __str__(self):
+        return f'{self.user.username}'
+
 
 class Category(models.Model):
     category = models.CharField(max_length=255, unique=True)
@@ -44,6 +47,8 @@ class Post(models.Model):
     def preview(self):
         return f'{self.text[:124]}...'
 
+    def __str__(self):
+        return f'{self.title} - {self.text[:128]}'
 
 class PostCategory(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
