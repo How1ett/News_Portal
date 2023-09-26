@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Sum
+from django.urls import reverse
 
 
 # Create your models here.
@@ -28,7 +29,7 @@ class Category(models.Model):
 
 class Post(models.Model):
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
-# 0 - новость, 1 - статья.
+    # 0 - новость, 1 - статья.
     type = models.BooleanField()
     time_create = models.DateTimeField(auto_now_add=True)
     category = models.ManyToManyField(Category, through='PostCategory')
@@ -49,6 +50,10 @@ class Post(models.Model):
 
     def __str__(self):
         return f'{self.title} - {self.text[:128]}'
+
+    def get_absolute_url(self):
+        return reverse('post_detail', args=[str(self.id)])
+
 
 class PostCategory(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)

@@ -3,13 +3,13 @@
 {% load custom_tags %}
 
 {% block title %}
-Posts
+News
 {% endblock title %}
 
 {% block content %}
-   <h1>Все посты</h1>
+   <h1>Все новости</h1>
    <h3>{{ time_now|date:'M d Y' }}</h3>
-   <h3>Найдено статей: {{ posts|length }} </h3>
+   <h3>Найдено новостей: {{ news|length }} </h3>
 
    {# Добавляем форму, которая объединяет набор полей, которые будут отправляться в запросе #}
    <form action="" method="get">
@@ -20,14 +20,14 @@ Posts
    </form>
 
    <hr>
-   {% if posts %}
+   {% if news %}
        <table>
            <tr>
                <td>Заголовок</td>
                <td>Дата публикации</td>
                <td>Текст</td>
            </tr>
-           {% for post in posts %}
+           {% for post in news %}
            <tr>
                <td>{{ post.title|censor }}</td>
                <td>{{ post.time_create|date:'d M Y' }}</td>
@@ -37,7 +37,7 @@ Posts
 
        </table>
    {% else %}
-       <h2>Постов нет!</h2>
+       <h2>Новостей нет!</h2>
    {% endif %}
 
    {# Добавляем пагинацию на страницу #}
