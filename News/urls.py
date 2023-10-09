@@ -24,4 +24,10 @@ urlpatterns = [
 
     path('user_page/', UserView.as_view(), name='user_page'),
     path('upgrade/', upgrade_me, name='upgrade'),
+    # path('subscribe/', subscribe_me, name='subscribe'),
+
+    path('category/<int:pk>/', CategoryPost.as_view(), name='category'),
+    path('add_category/', AddCategoryView.as_view(), name='add_category'),
+    path('category_list/', CategoryList.as_view(), name='category_list'),
+    path('category/<int:pk>/subscribe', subscribe_to_category),
 ]

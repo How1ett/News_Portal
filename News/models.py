@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.urls import reverse
+from django.utils.translation import pgettext_lazy
 
 
 # Create your models here.
@@ -25,6 +26,15 @@ class Author(models.Model):
 
 class Category(models.Model):
     category = models.CharField(max_length=255, unique=True)
+    subscribe = models.ManyToManyField(User, through='CategorySubscribe', verbose_name=pgettext_lazy('subscriber', 'subscriber'))
+
+    def __str__(self) -> str:
+        return self.category
+
+
+class CategorySubscribe(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.PROTECT, verbose_name=pgettext_lazy('category', 'category'))
+    subscriber = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name=pgettext_lazy('subscriber', 'subscriber'))
 
 
 class Post(models.Model):

@@ -13,6 +13,7 @@ class PostForm(forms.ModelForm):
             'text',
             'mat_rating',
             'author',
+            'category'
         ]
 
         def clean(self):
@@ -35,11 +36,14 @@ class NewsForm(forms.ModelForm):
     class Meta:
         model = Post
         fields = [
+            'type',
             'title',
             'text',
             'mat_rating',
             'author',
+            'category'
         ]
+        widgets = {'type': forms.HiddenInput()}
 
         def clean(self):
             cleaned_data = super().clean()

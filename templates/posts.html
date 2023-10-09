@@ -7,6 +7,11 @@ Posts
 {% endblock title %}
 
 {% block content %}
+    {% if is_not_subscribed %}
+        <a class="btn btn-primary" href="{% url 'subscribe' %}">Подписаться</a>
+    {% else %}
+        <p>Вы подписаны на данную категорию.</p>
+    {% endif %}
    <h1>Все посты</h1>
    <h3>{{ time_now|date:'M d Y' }}</h3>
    <h3>Найдено статей: {{ posts|length }} </h3>

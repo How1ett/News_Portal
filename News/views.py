@@ -1,17 +1,21 @@
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.auth.forms import UserCreationForm
 from datetime import datetime
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
-from .models import Post
+from .models import Post, Category, CategorySubscribe, User
 from .filters import PostFilter, NewsFilter
 from .forms import PostForm, NewsForm
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib.auth.models import Group
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives, send_mail
+from NewsPaper import settings
+from django.http import HttpResponseRedirect
 
-#from django.shortcuts import render
-#from django.http import HttpResponse, HttpResponseRedirect
+
+# from django.shortcuts import render
+# from django.http import HttpResponse, HttpResponseRedirect
 
 class PostsList(ListView):
     model = Post
@@ -24,7 +28,7 @@ class PostsList(ListView):
     def get_queryset(self):
         # Получаем обычный запрос
         queryset = super().get_queryset()
-        #queryset = super().get_queryset()
+        # queryset = super().get_queryset()
         # Используем наш класс фильтрации.
         # self.request.GET содержит объект QueryDict
         # Сохраняем нашу фильтрацию в объекте класса,
@@ -52,6 +56,33 @@ class PostCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Post
     template_name = 'post_edit.html'
 
+    def post(self, request, *args, **kwargs):
+        form = PostForm(request.POST)
+        post_category_pk = request.POST['category']
+        sub_text = request.POST.get('text')
+        sub_title = request.POST.get('title')
+        post_category = Category.objects.get(pk=post_category_pk)
+        subscribers = post_category.subscribe.all()
+
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.save()
+
+        for subscriber in subscribers:
+            html_content = render_to_string(
+                'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
+            )
+            msg = EmailMultiAlternatives(
+                subject=sub_title,
+                body=f'{sub_text[:50]}',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[subscriber.email],
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        return redirect('/posts/')
+
+
 
 class PostUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = ('News.change_post',)
@@ -78,7 +109,7 @@ class NewsList(ListView):
     def get_queryset(self):
         # Получаем обычный запрос
         queryset = Post.objects.filter(type=0)
-        #queryset = super().get_queryset()
+        # queryset = super().get_queryset()
         # Используем наш класс фильтрации.
         # self.request.GET содержит объект QueryDict
         # Сохраняем нашу фильтрацию в объекте класса,
@@ -97,13 +128,34 @@ class NewsList(ListView):
 class NewsCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = ('News.add_post',)
     form_class = NewsForm
-    model = Post
     template_name = 'news_edit.html'
 
-    def form_valid(self, form):
-        news = form.save(commit=False)
-        news.type = 0
-        return super().form_valid(form)
+    def post(self, request, *args, **kwargs):
+        form = NewsForm(request.POST)
+        form.fields['type'].initial = True
+        post_category_pk = request.POST['category']
+        sub_text = request.POST.get('text')
+        sub_title = request.POST.get('title')
+        post_category = Category.objects.get(pk=post_category_pk)
+        subscribers = post_category.subscribe.all()
+
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.save()
+
+        for subscriber in subscribers:
+            html_content = render_to_string(
+                'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
+            )
+            msg = EmailMultiAlternatives(
+                subject=sub_title,
+                body=f'{sub_text[:50]}',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[subscriber.email],
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        return redirect('/news/')
 
 
 class NewsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -143,7 +195,7 @@ class ArticlesList(ListView):
     def get_queryset(self):
         # Получаем обычный запрос
         queryset = Post.objects.filter(type=1)
-        #queryset = super().get_queryset()
+        # queryset = super().get_queryset()
         # Используем наш класс фильтрации.
         # self.request.GET содержит объект QueryDict
         # Сохраняем нашу фильтрацию в объекте класса,
@@ -159,16 +211,39 @@ class ArticlesList(ListView):
         return context
 
 
-class ArticlesCreate(LoginRequiredMixin, PermissionRequiredMixin,  CreateView):
+class ArticlesCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = ('News.add_post',)
     form_class = NewsForm
-    model = Post
     template_name = 'articles_edit.html'
 
-    def form_valid(self, form):
-        news = form.save(commit=False)
-        news.type = 1
-        return super().form_valid(form)
+
+    def post(self, request, *args, **kwargs):
+        form = NewsForm(request.POST)
+        form.fields['type'].initial = True
+
+        post_category_pk = request.POST['category']
+        sub_text = request.POST.get('text')
+        sub_title = request.POST.get('title')
+        post_category = Category.objects.get(pk=post_category_pk)
+        subscribers = post_category.subscribe.all()
+
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.save()
+
+        for subscriber in subscribers:
+            html_content = render_to_string(
+                'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
+            )
+            msg = EmailMultiAlternatives(
+                subject=sub_title,
+                body=f'{sub_text[:50]}',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[subscriber.email],
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+        return redirect('/articles/')
 
 
 class ArticlesUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -183,6 +258,33 @@ class ArticlesDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Post
     template_name = 'articles_delete.html'
     success_url = reverse_lazy('articles_list')
+
+
+class CategoryPost(DetailView):
+    model = Category
+    template_name = 'post_category.html'
+    context_object_name = 'postcategory'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['posts'] = Post.objects.filter(category=kwargs['object'])
+        context['is_not_categorys'] = not CategorySubscribe.objects.filter(category=self.kwargs.get(id), subscriber=self.request.user.id).exists()
+
+        return context
+
+
+# Добавление категории:
+class AddCategoryView(CreateView):
+    model = Category
+    template_name = 'add_category.html'
+    fields = '__all__'
+
+
+# Список категорий:
+class CategoryList(ListView):
+    model = Category
+    template_name = 'category_list.html'
+    context_object_name = 'category'
 
 
 class UserView(LoginRequiredMixin, TemplateView):
@@ -200,4 +302,25 @@ def upgrade_me(request):
     authors_group = Group.objects.get(name='authors')
     if not request.user.groups.filter(name='authors').exists():
         authors_group.user_set.add(user)
-    return redirect('/user_page/')
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+# @login_required
+# def subscribe_me(request):
+#     user = request.user
+#     category = Category.objects.get(id=pk)
+#     category.subscribers.add(user)
+#     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+def subscribe_to_category(request, pk):
+    user = request.user
+    if not CategorySubscribe.objects.filter(category=pk, subscriber=user.id).exists():
+        CategorySubscribe.objects.create(category=Category.objects.get(pk=pk), subscriber=User.objects.get(pk=user.id))
+
+
+    # current_user = request.user
+    # CategorySubscribe.objects.create(category=Category.objects.get(pk=pk),
+    #                                  subscriber=User.objects.get(pk=current_user.id))
+
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
