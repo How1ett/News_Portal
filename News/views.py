@@ -6,12 +6,13 @@ from .models import Post, Category, CategorySubscribe, User
 from .filters import PostFilter, NewsFilter
 from .forms import PostForm, NewsForm
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.contrib.auth.models import Group
 from django.template.loader import render_to_string
-from django.core.mail import EmailMultiAlternatives, send_mail
+from django.core.mail import EmailMultiAlternatives
 from NewsPaper import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.utils import timezone
 
 
 # from django.shortcuts import render
@@ -56,31 +57,36 @@ class PostCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Post
     template_name = 'post_edit.html'
 
-    def post(self, request, *args, **kwargs):
-        form = PostForm(request.POST)
-        post_category_pk = request.POST['category']
-        sub_text = request.POST.get('text')
-        sub_title = request.POST.get('title')
-        post_category = Category.objects.get(pk=post_category_pk)
-        subscribers = post_category.subscribe.all()
-
-        if form.is_valid():
-            post = form.save(commit=False)
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        user = post.author
+        time = timezone.now()
+        posts_24_hours = time - timezone.timedelta(days=1)
+        posts_count = Post.objects.filter(author=user, time_create__gte=posts_24_hours).count()
+        if posts_count >= 3:
+            return HttpResponseBadRequest(f'{post.author}, Вы создали больше трёх постов за сутки, лимит превышен.')
+        else:
             post.save()
 
-        for subscriber in subscribers:
-            html_content = render_to_string(
-                'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
-            )
-            msg = EmailMultiAlternatives(
-                subject=sub_title,
-                body=f'{sub_text[:50]}',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[subscriber.email],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-        return redirect('/posts/')
+            post_category_pk = self.request.POST['category']
+            sub_text = self.request.POST.get('text')
+            sub_title = self.request.POST.get('title')
+            post_category = Category.objects.get(pk=post_category_pk)
+            subscribers = post_category.subscribe.all()
+
+            for subscriber in subscribers:
+                html_content = render_to_string(
+                    'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
+                )
+                msg = EmailMultiAlternatives(
+                    subject=sub_title,
+                    body=f'{sub_text[:50]}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[subscriber.email],
+                )
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+            return redirect('/posts/')
 
 
 
@@ -130,32 +136,39 @@ class NewsCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = NewsForm
     template_name = 'news_edit.html'
 
-    def post(self, request, *args, **kwargs):
-        form = NewsForm(request.POST)
-        form.fields['type'].initial = True
-        post_category_pk = request.POST['category']
-        sub_text = request.POST.get('text')
-        sub_title = request.POST.get('title')
-        post_category = Category.objects.get(pk=post_category_pk)
-        subscribers = post_category.subscribe.all()
-
-        if form.is_valid():
-            post = form.save(commit=False)
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        post.type = False
+        user = post.author
+        time = timezone.now()
+        posts_24_hours = time - timezone.timedelta(days=1)
+        posts_count = Post.objects.filter(author=user, time_create__gte=posts_24_hours).count()
+        if posts_count >= 3:
+            return HttpResponseBadRequest(f'{post.author}, Вы создали больше трёх постов за сутки, лимит превышен.')
+        else:
             post.save()
 
-        for subscriber in subscribers:
-            html_content = render_to_string(
-                'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
-            )
-            msg = EmailMultiAlternatives(
-                subject=sub_title,
-                body=f'{sub_text[:50]}',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[subscriber.email],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-        return redirect('/news/')
+            post_category_pk = self.request.POST['category']
+            sub_text = self.request.POST.get('text')
+            sub_title = self.request.POST.get('title')
+            post_category = Category.objects.get(pk=post_category_pk)
+            subscribers = post_category.subscribe.all()
+
+
+            for subscriber in subscribers:
+                html_content = render_to_string(
+                    'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
+                )
+                msg = EmailMultiAlternatives(
+                    subject=sub_title,
+                    body=f'{sub_text[:50]}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[subscriber.email],
+                )
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+            return redirect('/news/')
+
 
 
 class NewsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -217,33 +230,37 @@ class ArticlesCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     template_name = 'articles_edit.html'
 
 
-    def post(self, request, *args, **kwargs):
-        form = NewsForm(request.POST)
-        form.fields['type'].initial = True
-
-        post_category_pk = request.POST['category']
-        sub_text = request.POST.get('text')
-        sub_title = request.POST.get('title')
-        post_category = Category.objects.get(pk=post_category_pk)
-        subscribers = post_category.subscribe.all()
-
-        if form.is_valid():
-            post = form.save(commit=False)
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        post.type = 1
+        user = post.author
+        time = timezone.now()
+        posts_24_hours = time - timezone.timedelta(days=1)
+        posts_count = Post.objects.filter(author=user, time_create__gte=posts_24_hours).count()
+        if posts_count >= 3:
+            return HttpResponseBadRequest(f'{post.author}, Вы создали больше трёх постов за сутки, лимит превышен.')
+        else:
             post.save()
 
-        for subscriber in subscribers:
-            html_content = render_to_string(
-                'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
-            )
-            msg = EmailMultiAlternatives(
-                subject=sub_title,
-                body=f'{sub_text[:50]}',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[subscriber.email],
-            )
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-        return redirect('/articles/')
+            post_category_pk = self.request.POST['category']
+            sub_text = self.request.POST.get('text')
+            sub_title = self.request.POST.get('title')
+            post_category = Category.objects.get(pk=post_category_pk)
+            subscribers = post_category.subscribe.all()
+
+            for subscriber in subscribers:
+                html_content = render_to_string(
+                    'mail.html', {'user': subscriber, 'text': sub_text[:50], 'post': post, 'title': sub_title}
+                )
+                msg = EmailMultiAlternatives(
+                    subject=sub_title,
+                    body=f'{sub_text[:50]}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[subscriber.email],
+                )
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+            return redirect('/articles/')
 
 
 class ArticlesUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -268,7 +285,7 @@ class CategoryPost(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['posts'] = Post.objects.filter(category=kwargs['object'])
-        context['is_not_categorys'] = not CategorySubscribe.objects.filter(category=self.kwargs.get(id), subscriber=self.request.user.id).exists()
+        context['is_not_categorys'] = not CategorySubscribe.objects.filter(category=self.kwargs['pk'], subscriber=self.request.user.id).exists()
 
         return context
 
