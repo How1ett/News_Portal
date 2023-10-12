@@ -86,7 +86,8 @@ class PostCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 )
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
-            return redirect('/posts/')
+            return super().form_valid(form)
+            # return redirect('/posts/')
 
 
 
@@ -167,7 +168,8 @@ class NewsCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 )
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
-            return redirect('/news/')
+            return super().form_valid(form)
+            # return redirect('/news/')
 
 
 
@@ -260,7 +262,8 @@ class ArticlesCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 )
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
-            return redirect('/articles/')
+            return super().form_valid(form)
+            # return redirect('/articles/')
 
 
 class ArticlesUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
